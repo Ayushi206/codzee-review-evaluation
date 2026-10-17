@@ -51,3 +51,10 @@ export interface Paginated<T> {
     totalPages: number;
   };
 }
+
+export interface TaskStats {
+  total: number;
+  overdue: number;
+  byStatus: Record<TaskStatus, number>;
+  byPriority: Record<TaskPriority, number>;
+}

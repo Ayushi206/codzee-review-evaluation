@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { TaskRepository } from '../../src/modules/tasks/task.repository';
-import { ListTasksQuery, NewTask, Task, UpdateTaskInput } from '../../src/modules/tasks/task.types';
+import { buildStats, StatGroup } from '../../src/modules/tasks/task.domain';
+import { ListTasksQuery, NewTask, Task, TaskStats, UpdateTaskInput } from '../../src/modules/tasks/task.types';
 
 export class InMemoryTaskRepository implements TaskRepository {
   private readonly tasks = new Map<string, Task>();
@@ -42,5 +43,22 @@ export class InMemoryTaskRepository implements TaskRepository {
 
   async delete(id: string): Promise<boolean> {
     return this.tasks.delete(id);
+  }
+
+  async getStats(today: string): Promise<TaskStats> {
+    const groups = new Map<string, StatGroup>();
+
+    for (const task of this.tasks.values()) {
+      const key = `${task.status}:${task.priority}`;
+      const group = groups.get(key) ?? { status: task.status, priority: task.priority, count: 0, overdue: 0 };
+
+      group.count += 1;
+      if (task.dueDate !== null && task.dueDate < today && task.status !== 'done') {
+        group.overdue += 1;
+      }
+      groups.set(key, group);
+    }
+
+    return buildStats([...groups.values()]);
   }
 }
