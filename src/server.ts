@@ -1,11 +1,15 @@
 import { createApp } from './app';
 import { env } from './config/env';
 import { createPool } from './db/pool';
+import { createBulkRouter } from './modules/tasks/task.bulk';
 import { PgTaskRepository } from './modules/tasks/task.repository';
 import { TaskService } from './modules/tasks/task.service';
 
 const pool = createPool(env.DATABASE_URL);
-const app = createApp({ taskService: new TaskService(new PgTaskRepository(pool)) });
+const app = createApp({
+  taskService: new TaskService(new PgTaskRepository(pool)),
+  bulkRouter: createBulkRouter(pool),
+});
 
 const server = app.listen(env.PORT, () => {
   console.log(`Task Manager API listening on http://localhost:${env.PORT}`);
