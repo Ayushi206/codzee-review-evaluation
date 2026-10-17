@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { createTaskSchema, listTasksQuerySchema, taskIdParamSchema, updateTaskSchema } from './task.schema';
+import {
+  createTaskSchema,
+  listTasksQuerySchema,
+  replaceTaskSchema,
+  taskIdParamSchema,
+  updateTaskSchema,
+} from './task.schema';
 import { TaskService } from './task.service';
 
 export function createTaskRouter(service: TaskService): Router {
@@ -35,6 +41,15 @@ export function createTaskRouter(service: TaskService): Router {
     asyncHandler(async (req, res) => {
       const { id } = taskIdParamSchema.parse(req.params);
       res.json(await service.getById(id));
+    }),
+  );
+
+  router.put(
+    '/:id',
+    asyncHandler(async (req, res) => {
+      const { id } = taskIdParamSchema.parse(req.params);
+      const input = replaceTaskSchema.parse(req.body);
+      res.json(await service.replace(id, input));
     }),
   );
 

@@ -106,6 +106,48 @@ describe('Tasks API', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
+  it('PUT /api/tasks/:id replaces the editable fields', async () => {
+    const task = await createTask({
+      title: 'Old',
+      description: 'details',
+      priority: 'high',
+      dueDate: '2026-12-01',
+    });
+
+    const res = await request(app).put(`/api/tasks/${task.id}`).send({ title: 'New' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      title: 'New',
+      description: null,
+      priority: 'medium',
+      dueDate: null,
+      status: 'todo',
+    });
+  });
+
+  it('PUT /api/tasks/:id requires a title', async () => {
+    const task = await createTask();
+
+    const res = await request(app).put(`/api/tasks/${task.id}`).send({ priority: 'low' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /api/tasks/:id enforces the status workflow', async () => {
+    const task = await createTask();
+
+    const res = await request(app).put(`/api/tasks/${task.id}`).send({ title: 'Same', status: 'done' });
+
+    expect(res.status).toBe(409);
+  });
+
+  it('PUT /api/tasks/:id returns 404 for an unknown id', async () => {
+    const res = await request(app).put(`/api/tasks/${randomUUID()}`).send({ title: 'Ghost' });
+
+    expect(res.status).toBe(404);
+  });
+
   it('PATCH /api/tasks/:id updates fields', async () => {
     const task = await createTask();
 
