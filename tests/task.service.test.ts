@@ -85,3 +85,36 @@ describe('TaskService', () => {
     await expect(service.delete(randomUUID())).rejects.toMatchObject({ statusCode: 404 });
   });
 });
+
+describe('TaskService.getStats', () => {
+  const fixedNow = () => new Date('2026-10-17T10:00:00Z');
+
+  it('returns zeros when there are no tasks', async () => {
+    const service = new TaskService(new InMemoryTaskRepository(), fixedNow);
+
+    expect(await service.getStats()).toEqual({
+      total: 0,
+      overdue: 0,
+      byStatus: { todo: 0, in_progress: 0, done: 0 },
+      byPriority: { low: 0, medium: 0, high: 0 },
+    });
+  });
+
+  it('counts by status and priority and only flags unfinished, past-due tasks as overdue', async () => {
+    const service = new TaskService(new InMemoryTaskRepository(), fixedNow);
+
+    await service.create({ title: 'Late', priority: 'high', dueDate: '2026-10-01' });
+    await service.create({ title: 'Due today', dueDate: '2026-10-17' });
+    await service.create({ title: 'No due date' });
+    const finished = await service.create({ title: 'Finished late', dueDate: '2026-09-01' });
+    await service.update(finished.id, { status: 'in_progress' });
+    await service.update(finished.id, { status: 'done' });
+
+    expect(await service.getStats()).toEqual({
+      total: 4,
+      overdue: 1,
+      byStatus: { todo: 3, in_progress: 0, done: 1 },
+      byPriority: { low: 0, medium: 3, high: 1 },
+    });
+  });
+});

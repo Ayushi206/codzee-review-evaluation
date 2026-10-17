@@ -1,5 +1,14 @@
 import { Pool } from 'pg';
-import { ListTasksQuery, NewTask, Task, TaskPriority, TaskStatus, UpdateTaskInput } from './task.types';
+import { buildStats, StatGroup } from './task.domain';
+import {
+  ListTasksQuery,
+  NewTask,
+  Task,
+  TaskPriority,
+  TaskStats,
+  TaskStatus,
+  UpdateTaskInput,
+} from './task.types';
 
 export interface TaskRepository {
   create(input: NewTask): Promise<Task>;
@@ -7,6 +16,8 @@ export interface TaskRepository {
   list(query: ListTasksQuery): Promise<{ items: Task[]; total: number }>;
   update(id: string, input: UpdateTaskInput): Promise<Task | null>;
   delete(id: string): Promise<boolean>;
+  // today is YYYY-MM-DD, used for the overdue count
+  getStats(today: string): Promise<TaskStats>;
 }
 
 interface TaskRow {
@@ -128,5 +139,18 @@ export class PgTaskRepository implements TaskRepository {
   async delete(id: string): Promise<boolean> {
     const result = await this.pool.query('DELETE FROM tasks WHERE id = $1', [id]);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getStats(today: string): Promise<TaskStats> {
+    const { rows } = await this.pool.query<StatGroup>(
+      `SELECT status,
+              priority,
+              COUNT(*)::int AS count,
+              COUNT(*) FILTER (WHERE due_date <= $1::date AND status <> 'done')::int AS overdue
+       FROM tasks
+       GROUP BY status, priority`,
+      [today],
+    );
+    return buildStats(rows);
   }
 }

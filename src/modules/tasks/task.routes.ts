@@ -22,6 +22,14 @@ export function createTaskRouter(service: TaskService): Router {
     }),
   );
 
+  // keep above /:id, otherwise "stats" is parsed as an id
+  router.get(
+    '/stats',
+    asyncHandler(async (_req, res) => {
+      res.json(await service.getStats());
+    }),
+  );
+
   router.get(
     '/:id',
     asyncHandler(async (req, res) => {

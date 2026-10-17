@@ -81,6 +81,18 @@ describe('Tasks API', () => {
     expect(res.status).toBe(400);
   });
 
+  it('GET /api/tasks/stats returns aggregate counts (and is not treated as an id)', async () => {
+    await createTask({ title: 'One', priority: 'high' });
+    await createTask({ title: 'Two' });
+
+    const res = await request(app).get('/api/tasks/stats');
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.byStatus).toEqual({ todo: 2, in_progress: 0, done: 0 });
+    expect(res.body.byPriority).toEqual({ low: 0, medium: 1, high: 1 });
+  });
+
   it('GET /api/tasks/:id returns 400 for a malformed id', async () => {
     const res = await request(app).get('/api/tasks/not-a-uuid');
 

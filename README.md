@@ -35,6 +35,7 @@ npm run typecheck
 | GET    | `/health`        | Health check                             |
 | POST   | `/api/tasks`     | Create a task                            |
 | GET    | `/api/tasks`     | List tasks (filter, search, sort, page)  |
+| GET    | `/api/tasks/stats` | Counts by status and priority, plus overdue |
 | GET    | `/api/tasks/:id` | Get one task                             |
 | PATCH  | `/api/tasks/:id` | Partially update a task                  |
 | DELETE | `/api/tasks/:id` | Delete a task                            |
@@ -58,6 +59,21 @@ curl "http://localhost:3000/api/tasks?status=in_progress&priority=high&sortBy=du
 curl -X PATCH http://localhost:3000/api/tasks/<id> \
   -H "Content-Type: application/json" \
   -d '{"status": "in_progress"}'
+
+# Stats
+curl http://localhost:3000/api/tasks/stats
+```
+
+Every status and priority is always in the response (0 if there are none).
+Overdue = not `done` and due date before today (UTC).
+
+```json
+{
+  "total": 4,
+  "overdue": 1,
+  "byStatus": { "todo": 3, "in_progress": 0, "done": 1 },
+  "byPriority": { "low": 0, "medium": 3, "high": 1 }
+}
 ```
 
 Errors share one shape:

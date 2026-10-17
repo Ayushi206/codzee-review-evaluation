@@ -1,7 +1,7 @@
 import { AppError, notFound } from '../../utils/AppError';
 import { canTransition } from './task.domain';
 import { TaskRepository } from './task.repository';
-import { ListTasksQuery, NewTask, Paginated, Task, UpdateTaskInput } from './task.types';
+import { ListTasksQuery, NewTask, Paginated, Task, TaskStats, UpdateTaskInput } from './task.types';
 
 export interface CreateTaskInput {
   title: string;
@@ -11,7 +11,11 @@ export interface CreateTaskInput {
 }
 
 export class TaskService {
-  constructor(private readonly repository: TaskRepository) {}
+  // now() can be swapped in tests
+  constructor(
+    private readonly repository: TaskRepository,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   create(input: CreateTaskInput): Promise<Task> {
     return this.repository.create({
@@ -60,5 +64,11 @@ export class TaskService {
   async delete(id: string): Promise<void> {
     const deleted = await this.repository.delete(id);
     if (!deleted) throw notFound('Task');
+  }
+
+  getStats(): Promise<TaskStats> {
+    // UTC date
+    const today = this.now().toISOString().slice(0, 10);
+    return this.repository.getStats(today);
   }
 }
