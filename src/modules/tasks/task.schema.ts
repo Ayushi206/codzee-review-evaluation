@@ -9,25 +9,36 @@ const dateString = z
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }, 'must be a valid calendar date');
 
-const title = z.string().trim().min(1, 'title is required').max(200);
-const description = z.string().trim().max(2000);
+// shared field rules for create / put / patch
+const fields = {
+  title: z.string().trim().min(1, 'title is required').max(255),
+  description: z.string().trim().max(2000),
+  status: z.enum(TASK_STATUSES),
+  priority: z.enum(TASK_PRIORITIES),
+  dueDate: dateString,
+};
 
-export const createTaskSchema = z
-  .object({
-    title,
-    description: description.nullish(),
-    priority: z.enum(TASK_PRIORITIES).default('medium'),
-    dueDate: dateString.nullish(),
-  })
+const createShape = {
+  title: fields.title,
+  description: fields.description.nullish(),
+  priority: fields.priority.default('medium'),
+  dueDate: fields.dueDate.nullish(),
+};
+
+export const createTaskSchema = z.object(createShape).strict();
+
+// PUT = create fields + optional status
+export const replaceTaskSchema = z
+  .object({ ...createShape, status: fields.status.optional() })
   .strict();
 
 export const updateTaskSchema = z
   .object({
-    title: title.optional(),
-    description: description.nullable().optional(),
-    status: z.enum(TASK_STATUSES).optional(),
-    priority: z.enum(TASK_PRIORITIES).optional(),
-    dueDate: dateString.nullable().optional(),
+    title: fields.title.optional(),
+    description: fields.description.optional(),
+    status: fields.status.optional(),
+    priority: fields.priority.optional(),
+    dueDate: fields.dueDate.nullable().optional(),
   })
   .strict()
   .refine((body) => Object.keys(body).length > 0, {
@@ -35,8 +46,8 @@ export const updateTaskSchema = z
   });
 
 export const listTasksQuerySchema = z.object({
-  status: z.enum(TASK_STATUSES).optional(),
-  priority: z.enum(TASK_PRIORITIES).optional(),
+  status: fields.status.optional(),
+  priority: fields.priority.optional(),
   search: z.string().trim().min(1).max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

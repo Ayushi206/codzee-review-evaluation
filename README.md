@@ -37,6 +37,7 @@ npm run typecheck
 | GET    | `/api/tasks`     | List tasks (filter, search, sort, page)  |
 | GET    | `/api/tasks/stats` | Counts by status and priority, plus overdue |
 | GET    | `/api/tasks/:id` | Get one task                             |
+| PUT    | `/api/tasks/:id` | Replace a task's editable fields         |
 | PATCH  | `/api/tasks/:id` | Partially update a task                  |
 | DELETE | `/api/tasks/:id` | Delete a task                            |
 

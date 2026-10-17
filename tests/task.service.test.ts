@@ -72,6 +72,43 @@ describe('TaskService', () => {
     expect(reopened.status).toBe('in_progress');
   });
 
+  it('replace resets omitted optional fields to their defaults', async () => {
+    const task = await service.create({
+      title: 'Old',
+      description: 'details',
+      priority: 'high',
+      dueDate: '2026-12-01',
+    });
+
+    const replaced = await service.replace(task.id, { title: 'New' });
+
+    expect(replaced).toMatchObject({
+      title: 'New',
+      description: null,
+      priority: 'medium',
+      dueDate: null,
+      status: 'todo',
+    });
+  });
+
+  it('replace keeps the current status when none is provided', async () => {
+    const task = await service.create({ title: 'In flight' });
+    await service.update(task.id, { status: 'in_progress' });
+
+    const replaced = await service.replace(task.id, { title: 'Renamed' });
+
+    expect(replaced.status).toBe('in_progress');
+  });
+
+  it('replace enforces the status workflow', async () => {
+    const task = await service.create({ title: 'Skip ahead' });
+
+    await expect(service.replace(task.id, { title: 'Skip ahead', status: 'done' })).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'INVALID_STATUS_TRANSITION',
+    });
+  });
+
   it('returns pagination metadata', async () => {
     for (const title of ['A', 'B', 'C']) await service.create({ title });
 
